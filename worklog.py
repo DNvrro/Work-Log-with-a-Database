@@ -16,7 +16,8 @@ class Entry(Model):
     task_time = TextField()
     task_date = DateField(formats=["%m/%d/%Y"])
     notes = TextField()
-    #timestamp = DateTimeField(default=datetime.datetime.now)
+
+    # timestamp = DateTimeField(default=datetime.datetime.now)
 
     class Meta:
         database = db
@@ -50,30 +51,28 @@ def menu_loop():
             print("That is not a valid choice. Please try again")
             menu_loop()
 
+
 def quit_program():
     """Quit the application"""
     print("Thank you for using Work Log DB. Goodbye.")
     exit()
 
+
 def add_entry():
     """Add an entry"""
-    entry = ''
 
     while True:
         employee_name = input('Enter your name:\n ').strip()
         task_name = input('The name of your task:\n ').strip()
         task_time = time_format(input('Time '
-                             'spent on the task '
+                                      'spent on the task '
                                       '(Rounded in minutes):\n ')).strip()
         task_date = date_format(input('Please enter the day in the MM/DD/YYYY '
                                       'format:\n'))
 
         notes = input('Additional notes (optional):\n ').strip()
 
-
         break
-
-
 
     if input('Save entry? [Y/n]').lower() != 'n':
         Entry.create(employee_name=employee_name, task_name=task_name,
@@ -90,7 +89,8 @@ def view_entries(column=None, query=None):
 
     entries = Entry.select().order_by(Entry.task_date.desc())
     entries = entries.where(column.contains(query))
-
+    print('hi')
+    print(entries)
     cnt = 1
     for entry in entries:
 
@@ -121,9 +121,6 @@ def view_entries(column=None, query=None):
             print("Your entry has been updated!")
 
     menu_loop()
-
-
-
 
 
 def search_entries():
@@ -173,7 +170,6 @@ def search_employee():
             choice = None
 
 
-
 def search_date():
     """This function gives the user the option to search the database
     by an exact date or by a range of dates"""
@@ -185,29 +181,37 @@ def search_date():
     if range_search == 'y':
         date1 = date_format(input("Please enter your begining date "
                                   "in MM/DD/YYYY format: "))
-        date2 = date_format(input("Please enter your second date in MM/DD/YYYY"
+        date2 = date_format(input("Please enter your end date in MM/DD/YYYY"
                                   " format: "))
+        conv_date1 = datetime.datetime.strptime(date1, '%m/%d/%Y')
+        new_date1 = conv_date1.strftime('%Y-%m-%d')
 
-        dates = Entry.select().where(Entry.task_date.between(date1, date2))
+        conv_date2 = datetime.datetime.strptime(date2, '%m/%d/%Y')
+        new_date2 = conv_date2.strftime('%Y-%m-%d')
+
+
+        dates = [date.task_date for date in Entry.select().
+            where(Entry.task_date.between(new_date1, new_date2))]
+        print(dates)
         new_dates = []
         for date in dates:
-            d = datetime.datetime.strptime(str(date),'%Y-%m-%d')
+            d = datetime.datetime.strptime(str(date), '%Y-%m-%d')
             new_date = d.strftime('%B %d, %Y')
             new_dates.append(new_date)
-            print(new_dates)
+        print(new_dates)
         view_entries(Entry.task_date, new_dates)
 
 
     else:
-        dates =[date.task_date for date in Entry.select()
+        dates = [date.task_date for date in Entry.select()
             .order_by(Entry.task_date.desc())]
         new_dates = []
         for date in dates:
-            d = datetime.datetime.strptime(str(date),'%m/%d/%Y')
-            new_date = d.strftime('%Y-%m-%d')
+            d = datetime.datetime.strptime(str(date), '%Y-%m-%d')
+            new_date = d.strftime('%m/%d/%Y')
             new_dates.append(new_date)
 
-        cnt =  1
+        cnt = 1
         print('\n' + '=' * 60)
         for date in new_dates:
             print(str(cnt) + '. ' + str(date))
@@ -216,8 +220,8 @@ def search_date():
         choice = None
         while not choice:
             choice = input("Enter the number coresponding to the date you "
-                              "would like to search \nor enter 'q' to return to "
-                              "the search menu:\n>").lower().strip()
+                           "would like to search \nor enter 'q' to return to "
+                           "the search menu:\n>").lower().strip()
             if choice == 'q':
                 search_entries()
             else:
@@ -240,6 +244,7 @@ def search_time():
               'Please try another time\n')
         search_time()
 
+
 def search_term():
     search = input('What term would you like to search for? \n>').strip()
     choice = input('Would you like to search [t]ask or '
@@ -260,7 +265,6 @@ def search_term():
     entries2 = [notes.notes for notes in Entry.select().
         where(Entry.notes.contains(search))]
 
-
     if choice == 't':
         if len(entries1) >= 1:
             view_entries(Entry.task_name, search)
@@ -274,40 +278,40 @@ def search_term():
         search_entries()
 
 
-
 def delete_entry(entry):
     """Delete an entry"""
     if input('Are you sure? [Y/N] ').lower() == 'y':
         entry.delete_instance()
 
-def edit_entry(entry, column, query):
 
+def edit_entry(entry, column, query):
     choice = input('What part of the entry would you like to edit?'
-                          '\na) Task'
-                          '\nb) Task Time'
-                          '\nc) Date'
-                          '\nd) Notes'
-                          '\n> ').lower().strip()
+                   '\na) Task'
+                   '\nb) Task Time'
+                   '\nc) Date'
+                   '\nd) Notes'
+                   '\n> ').lower().strip()
 
     if choice == 'a':
         new_task = input("Please enter a new task name: ")
-        new_new = entry.update(task_name=new_task).\
+        new_new = entry.update(task_name=new_task). \
             where(column.contains(query)).execute()
     elif choice == 'b':
         new_time = time_format(input("Please enter a new time duration: "))
-        new_new = entry.update(task_time=new_time).\
+        new_new = entry.update(task_time=new_time). \
             where(column.contains(query)).execute()
     elif choice == 'c':
         new_date = date_format(input('Please enter a new date: '))
-        new_new = entry.update(task_date=new_date).\
+        new_new = entry.update(task_date=new_date). \
             where(column.contains(query)).execute()
     elif choice == 'd':
         new_note = input('Please enter a new note: ')
-        new_new = entry.update(note=new_note).\
+        new_new = entry.update(note=new_note). \
             where(column.contains(query)).execute()
     elif choice != 'a' or 'b' or 'c' or 'd':
         print("Sorry that is not a valid choice")
         edit_entry(entry, column, query)
+
 
 def date_format(date):
     """Checks that the user has entered
