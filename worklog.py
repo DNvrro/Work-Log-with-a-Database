@@ -193,13 +193,8 @@ def search_date():
         dates = [date.task_date for date in Entry.select().
             where(Entry.task_date.between(new_date1, new_date2))]
         print(dates)
-        new_dates = []
-        for date in dates:
-            d = datetime.datetime.strptime(str(date), '%Y-%m-%d')
-            new_date = d.strftime('%B %d, %Y')
-            new_dates.append(new_date)
-        print(new_dates)
-        view_entries(Entry.task_date, new_dates)
+        view_entries(Entry.task_date, dates)
+
 
 
     else:
