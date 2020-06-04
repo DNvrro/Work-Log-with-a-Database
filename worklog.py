@@ -4,6 +4,7 @@ from collections import OrderedDict
 import datetime
 import os
 import sys
+import time
 
 from peewee import *
 
@@ -14,7 +15,7 @@ class Entry(Model):
     employee_name = CharField(max_length=100)
     task_name = TextField()
     task_time = TextField()
-    task_date = DateField(formats=["%m/%d/%Y"])
+    task_date = DateField(formats=["%Y-%m-%d", "%m/%d/%Y"])
     notes = TextField()
 
     # timestamp = DateTimeField(default=datetime.datetime.now)
@@ -89,8 +90,7 @@ def view_entries(column=None, query=None):
 
     entries = Entry.select().order_by(Entry.task_date.desc())
     entries = entries.where(column.contains(query))
-    print('hi')
-    print(entries)
+
     cnt = 1
     for entry in entries:
 
@@ -125,29 +125,37 @@ def view_entries(column=None, query=None):
 
 def search_entries():
     """Search for an entry"""
+    if len(Entry.select()) == 0:
+        print("There are currently no entries in your database...")
+        choice = input('\nWould you like to return to the main menu [Yn]?\n>').lower()
+        if choice != 'y':
+            quit_program()
+        else:
+            menu_loop()
 
-    search_options = {'a': search_employee, 'b': search_date,
-                      'c': search_time, 'd': search_term, 'q': menu_loop}
-
-    search_choice = input('What would you like to search by?'
-                          '\na) Employee Name'
-                          '\nb) Entry Date'
-                          '\nc) Task Duration'
-                          '\nd) Search term'
-                          '\nq) Main Menu'
-                          '\n> ')
-    try:
-        choice = search_options[search_choice]
-        clear()
-
-    except KeyError:
-        input("That is not a valid choice. Please try again \n")
-        search_entries()
-        clear()
     else:
-        choice()
-        clear()
-    # view_entries(input('Search query: '))
+        search_options = {'a': search_employee, 'b': search_date,
+                        'c': search_time, 'd': search_term, 'q': menu_loop}
+
+        search_choice = input('What would you like to search by?'
+                            '\na) Employee Name'
+                            '\nb) Entry Date'
+                            '\nc) Task Duration'
+                            '\nd) Search term'
+                            '\nq) Main Menu'
+                            '\n> ')
+        try:
+            choice = search_options[search_choice]
+            clear()
+
+        except KeyError:
+            input("That is not a valid choice. Please try again \n")
+            search_entries()
+            clear()
+        else:
+            choice()
+            clear()
+        # view_entries(input('Search query: '))
 
 
 def search_employee():
@@ -192,8 +200,34 @@ def search_date():
 
         dates = [date.task_date for date in Entry.select().
             where(Entry.task_date.between(new_date1, new_date2))]
-        print(dates)
-        view_entries(Entry.task_date, dates)
+
+        new_dates = []
+        for date in dates:
+            d = datetime.datetime.strptime(str(date), '%Y-%m-%d')
+            new_date = d.strftime('%m/%d/%Y')
+            new_dates.append(new_date)
+
+        cnt = 1
+        print('\n' + '=' * 60)
+        print('Here are the entries that fall within your range.')
+        for date in new_dates:
+            print(str(cnt) + '. ' + str(date))
+            cnt += 1
+
+        choice = None
+        while not choice:
+            choice = input(
+                "Enter the number corresponding to the date you "
+                "would like to search \nor enter 'q' to return to "
+                "the search menu:\n>").lower().strip()
+            if choice == 'q':
+                search_entries()
+            else:
+                try:
+                    choice = int(choice)
+                except ValueError:
+                    choice = input('Please enter a valid number: \n>')
+        view_entries(Entry.task_date, dates[choice - 1])
 
 
 
@@ -214,7 +248,7 @@ def search_date():
 
         choice = None
         while not choice:
-            choice = input("Enter the number coresponding to the date you "
+            choice = input("Enter the number corresponding to the date you "
                            "would like to search \nor enter 'q' to return to "
                            "the search menu:\n>").lower().strip()
             if choice == 'q':
